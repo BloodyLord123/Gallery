@@ -101,6 +101,32 @@ function saveGalleryToLocalStorage() {
 
 loadImagesBtn.addEventListener('click', loadImages);
 
+function initializeFullscreen(index) {
+    currentIndex = index;
+    fullscreenDiv = document.createElement('div');
+    fullscreenDiv.classList.add('fullscreen');
+
+    const imgElement = createImageElement(images[currentIndex], null);
+    const exitBtn = createNavigationButton('Вийти', 'exit-fullscreen', exitFullscreen);
+    const prevBtn = createNavigationButton('<', 'prev-btn', () => navigateImage(-1));
+    const nextBtn = createNavigationButton('>', 'next-btn', () => navigateImage(1));
+
+    fullscreenDiv.append(imgElement, exitBtn, prevBtn, nextBtn);
+    document.body.appendChild(fullscreenDiv);
+    document.body.style.overflow = 'hidden';
+}
+
+function saveGalleryToLocalStorage() {
+    try {
+        localStorage.setItem('galleryImages', JSON.stringify(images));
+    } catch (error) {
+        console.error('Помилка збереження в локальне сховище:', error);
+        alert('Не вдалося зберегти галерею.');
+    }
+}
+
+loadImagesBtn.addEventListener('click', loadImages);
+
 function enterFullscreen(index) {
     currentIndex = index;
     fullscreenImg.src = images[currentIndex];
