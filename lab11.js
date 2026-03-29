@@ -5,9 +5,11 @@ const IMAGES_PER_LOAD = 2;
 const gallery = document.getElementById('gallery');
 const loadImagesBtn = document.getElementById('loadImages');
 const clearGalleryBtn = document.getElementById('clearGallery');
+const fullscreenModal = document.getElementById('fullscreenModal');
+const fullscreenImg = document.getElementById('fullscreenImg');
+
 let images = JSON.parse(localStorage.getItem('galleryImages')) || [];
 let currentIndex = 0;
-let fullscreenDiv;
 
 let timerElement = document.getElementById('timer');
 let startTime = Date.now();
@@ -15,6 +17,10 @@ let totalTime = 0;
 let timerInterval;
 let isPageVisible = true;
 const locationDisplay = document.getElementById("location");
+
+document.getElementById('exitBtn').addEventListener('click', exitFullscreen);
+document.getElementById('prevBtn').addEventListener('click', () => navigateImage(-1));
+document.getElementById('nextBtn').addEventListener('click', () => navigateImage(1));
 
 function startTimer() {
     timerInterval = setInterval(() => {
@@ -95,41 +101,21 @@ function saveGalleryToLocalStorage() {
 
 loadImagesBtn.addEventListener('click', loadImages);
 
-function initializeFullscreen(index) {
+function enterFullscreen(index) {
     currentIndex = index;
-    fullscreenDiv = document.createElement('div');
-    fullscreenDiv.classList.add('fullscreen');
-
-    const imgElement = createImageElement(images[currentIndex], null);
-    const exitBtn = createNavigationButton('Вийти', 'exit-fullscreen', exitFullscreen);
-    const prevBtn = createNavigationButton('<', 'prev-btn', () => navigateImage(-1));
-    const nextBtn = createNavigationButton('>', 'next-btn', () => navigateImage(1));
-
-    fullscreenDiv.append(imgElement, exitBtn, prevBtn, nextBtn);
-    document.body.appendChild(fullscreenDiv);
+    fullscreenImg.src = images[currentIndex];
+    fullscreenModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
-function createNavigationButton(text, className, onClick) {
-    const button = document.createElement('button');
-    button.classList.add('navigation-btn', className);
-    button.textContent = text;
-    button.addEventListener('click', onClick);
-    return button;
-}
-
-function enterFullscreen(index) {
-    initializeFullscreen(index);
-}
-
 function exitFullscreen() {
-    document.body.removeChild(fullscreenDiv);
+    fullscreenModal.style.display = 'none';
     document.body.style.overflow = 'auto';
 }
 
 function navigateImage(direction) {
     currentIndex = (currentIndex + direction + images.length) % images.length;
-    fullscreenDiv.querySelector('img').src = images[currentIndex];
+    fullscreenImg.src = images[currentIndex];
 }
 
 clearGalleryBtn.addEventListener('click', () => {
