@@ -1,142 +1,157 @@
-const gallery = document.getElementById('gallery');
-const loadImagesBtn = document.getElementById('loadImages');
-const clearGalleryBtn = document.getElementById('clearGallery');
-let images = JSON.parse(localStorage.getItem('galleryImages')) || [];
-let currentIndex = 0;
-let fullscreenDiv;
+const CONFIG = {
+    MS_IN_MINUTE: 60000,
+    MS_IN_SECOND: 1000,
+    IMAGES_PER_LOAD: 2,
+    API_URL: 'https://dog.ceo/api/breeds/image/random'
+};
 
-let timerElement = document.getElementById('timer');
-let startTime = Date.now();
-let totalTime = 0;
-let timerInterval;
-let isPageVisible = true;
-const locationDisplay = document.getElementById("location");
+const TimerModule = {
+    element: document.getElementById('timer'),
+    startTime: Date.now(),
+    totalTime: 0,
+    interval: null,
+    isPageVisible: true,
 
-function startTimer() {
-    timerInterval = setInterval(() => {
-        if (isPageVisible) {
-            totalTime = Date.now() - startTime;
-            const minutes = Math.floor(totalTime / 60000);
-            const seconds = Math.floor((totalTime % 60000) / 1000);
-            timerElement.textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-        }
-    }, 1000);
-}
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        isPageVisible = false;
-    } else {
-        startTime = Date.now() - totalTime;
-        isPageVisible = true;
-    }
-});
-window.addEventListener('focus', () => {
-    if (!timerInterval) {
-        startTimer();
-    }
-});
-
-function getLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(
-            (position) => {
-                const latitude = position.coords.latitude;
-                const longitude = position.coords.longitude;
-                locationDisplay.textContent = `Широта: ${latitude.toFixed(4)}, Довгота: ${longitude.toFixed(4)}`;
-            },
-            (error) => {
-                console.error("Помилка геолокації:", error);
-                locationDisplay.textContent = "Не вдалося отримати місцезнаходження.";
+    start() {
+        if (this.interval) return;
+        this.interval = setInterval(() => {
+            if (this.isPageVisible) {
+                this.totalTime = Date.now() - this.startTime;
+                const minutes = Math.floor(this.totalTime / CONFIG.MS_IN_MINUTE);
+                const seconds = Math.floor((this.totalTime % CONFIG.MS_IN_MINUTE) / CONFIG.MS_IN_SECOND);
+                this.element.textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
             }
-        );
-    } else {
-        locationDisplay.textContent = "Геолокація не підтримується браузером.";
-    }
-}
-window.addEventListener("load", getLocation);
+        }, 1000);
+    },
 
-function createImageElement(src, onClick) {
-    const img = document.createElement('img');
-    img.src = src;
-    img.addEventListener('click', onClick);
-    return img;
-}
-
-async function loadImages() {
-    for (let i = 0; i < 2; i++) {
-        try {
-            const response = await fetch('https://dog.ceo/api/breeds/image/random');
-            if (!response.ok) throw new Error('Помилка сервера');
-            const data = await response.json();
-            const img = createImageElement(data.message, () => enterFullscreen(images.indexOf(data.message)));
-            gallery.appendChild(img);
-            images.push(data.message);
-            saveGalleryToLocalStorage();
-        } catch (error) {
-            console.error('Помилка завантаження фото:', error);
-            alert('Не вдалося завантажити фото. Спробуйте ще раз.');
+    handleVisibilityChange() {
+        if (document.hidden) {
+            this.isPageVisible = false;
+        } else {
+            this.startTime = Date.now() - this.totalTime;
+            this.isPageVisible = true;
         }
+    },
+
+    init() {
+        document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+        window.addEventListener('focus', () => this.start());
+        this.start();
     }
-}
+};
 
-function saveGalleryToLocalStorage() {
-    try {
-        localStorage.setItem('galleryImages', JSON.stringify(images));
-    } catch (error) {
-        console.error('Помилка збереження в локальне сховище:', error);
-        alert('Не вдалося зберегти галерею.');
+const LocationModule = {
+    display: document.getElementById("location"),
+
+    fetchLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    this.display.textContent = `Широта: ${position.coords.latitude.toFixed(4)}, Довгота: ${position.coords.longitude.toFixed(4)}`;
+                },
+                (error) => {
+                    console.error("Помилка геолокації:", error);
+                    this.display.textContent = "Не вдалося отримати місцезнаходження.";
+                }
+            );
+        } else {
+            this.display.textContent = "Геолокація не підтримується браузером.";
+        }
+    },
+
+    init() {
+        this.fetchLocation();
     }
+};
+
+const GalleryModule = {
+    container: document.getElementById('gallery'),
+    images: JSON.parse(localStorage.getItem('galleryImages')) || [],
+    currentIndex: 0,
+
+    modal: document.getElementById('fullscreenModal'),
+    modalImg: document.getElementById('fullscreenImg'),
+
+    createImageElement(src, index) {
+        const img = document.createElement('img');
+        img.src = src;
+        img.addEventListener('click', () => this.enterFullscreen(index));
+        return img;
+    },
+
+    async loadNewImages() {
+        for (let i = 0; i < CONFIG.IMAGES_PER_LOAD; i++) {
+            try {
+                const response = await fetch(CONFIG.API_URL);
+                if (!response.ok) throw new Error('Помилка сервера');
+                const data = await response.json();
+
+                this.images.push(data.message);
+                const img = this.createImageElement(data.message, this.images.length - 1);
+                this.container.appendChild(img);
+
+                this.saveToStorage();
+            } catch (error) {
+                console.error('Помилка завантаження фото:', error);
+                alert('Не вдалося завантажити фото. Спробуйте ще раз.');
+            }
+        }
+    },
+
+    saveToStorage() {
+        try {
+            localStorage.setItem('galleryImages', JSON.stringify(this.images));
+        } catch (error) {
+            console.error('Помилка збереження:', error);
+        }
+    },
+
+    clearGallery() {
+        this.images = [];
+        localStorage.removeItem('galleryImages');
+        this.container.innerHTML = '';
+    },
+
+    enterFullscreen(index) {
+        this.currentIndex = index;
+        this.modalImg.src = this.images[this.currentIndex];
+        this.modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    },
+
+    exitFullscreen() {
+        this.modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    },
+
+    navigateImage(direction) {
+        this.currentIndex = (this.currentIndex + direction + this.images.length) % this.images.length;
+        this.modalImg.src = this.images[this.currentIndex];
+    },
+
+    renderSavedImages() {
+        this.images.forEach((src, index) => {
+            const img = this.createImageElement(src, index);
+            this.container.appendChild(img);
+        });
+    },
+
+    init() {
+        this.renderSavedImages();
+
+        document.getElementById('loadImages').addEventListener('click', () => this.loadNewImages());
+        document.getElementById('clearGallery').addEventListener('click', () => this.clearGallery());
+
+        document.getElementById('exitBtn').addEventListener('click', () => this.exitFullscreen());
+        document.getElementById('prevBtn').addEventListener('click', () => this.navigateImage(-1));
+        document.getElementById('nextBtn').addEventListener('click', () => this.navigateImage(1));
+    }
+};
+
+function initApp() {
+    TimerModule.init();
+    LocationModule.init();
+    GalleryModule.init();
 }
 
-loadImagesBtn.addEventListener('click', loadImages);
-
-function initializeFullscreen(index) {
-    currentIndex = index;
-    fullscreenDiv = document.createElement('div');
-    fullscreenDiv.classList.add('fullscreen');
-
-    const imgElement = createImageElement(images[currentIndex], null);
-    const exitBtn = createNavigationButton('Вийти', 'exit-fullscreen', exitFullscreen);
-    const prevBtn = createNavigationButton('<', 'prev-btn', () => navigateImage(-1));
-    const nextBtn = createNavigationButton('>', 'next-btn', () => navigateImage(1));
-
-    fullscreenDiv.append(imgElement, exitBtn, prevBtn, nextBtn);
-    document.body.appendChild(fullscreenDiv);
-    document.body.style.overflow = 'hidden';
-}
-
-function createNavigationButton(text, className, onClick) {
-    const button = document.createElement('button');
-    button.classList.add('navigation-btn', className);
-    button.textContent = text;
-    button.addEventListener('click', onClick);
-    return button;
-}
-
-function enterFullscreen(index) {
-    initializeFullscreen(index);
-}
-
-function exitFullscreen() {
-    document.body.removeChild(fullscreenDiv);
-    document.body.style.overflow = 'auto';
-}
-
-function navigateImage(direction) {
-    currentIndex = (currentIndex + direction + images.length) % images.length;
-    fullscreenDiv.querySelector('img').src = images[currentIndex];
-}
-
-clearGalleryBtn.addEventListener('click', () => {
-    images = [];
-    localStorage.removeItem('galleryImages');
-    gallery.innerHTML = '';
-});
-
-window.addEventListener('load', () => {
-    images.forEach(src => {
-        const img = createImageElement(src, () => enterFullscreen(images.indexOf(src)));
-        gallery.appendChild(img);
-    });
-});
+window.addEventListener('DOMContentLoaded', initApp);
