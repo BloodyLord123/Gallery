@@ -1,0 +1,81 @@
+body {
+    text-align: center;
+    margin: 0;
+}
+.gallery {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+}
+.gallery img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border: 2px solid gray;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: gray;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    animation: fadeIn 1s;
+}
+.fullscreen img {
+    max-width: 90%;
+    max-height: 90%;
+}
+.navigation-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: white;
+    padding: 10px;
+    font-size: 18px;
+    z-index: 1001;
+    cursor: pointer;
+}
+.prev-btn {
+    left: 20px;
+}
+.next-btn {
+    right: 20px;
+}
+.exit-fullscreen {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px;
+    z-index: 2;
+    cursor: pointer;
+}
+.clear-gallery {
+    margin-top: 20px;
+}
+.timer {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 5px;
+}
+#location {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: white;
+    padding: 5px;
+    z-index: 1;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

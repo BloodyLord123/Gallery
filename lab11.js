@@ -1,3 +1,7 @@
+const MS_IN_MINUTE = 60000;
+const MS_IN_SECOND = 1000;
+const IMAGES_PER_LOAD = 2;
+
 const gallery = document.getElementById('gallery');
 const loadImagesBtn = document.getElementById('loadImages');
 const clearGalleryBtn = document.getElementById('clearGallery');
@@ -16,8 +20,8 @@ function startTimer() {
     timerInterval = setInterval(() => {
         if (isPageVisible) {
             totalTime = Date.now() - startTime;
-            const minutes = Math.floor(totalTime / 60000);
-            const seconds = Math.floor((totalTime % 60000) / 1000);
+            const minutes = Math.floor(totalTime / MS_IN_MINUTE);
+            const seconds = Math.floor((totalTime % MS_IN_MINUTE) / MS_IN_SECOND);
             timerElement.textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
         }
     }, 1000);
@@ -64,7 +68,7 @@ function createImageElement(src, onClick) {
 }
 
 async function loadImages() {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < IMAGES_PER_LOAD; i++) {
         try {
             const response = await fetch('https://dog.ceo/api/breeds/image/random');
             if (!response.ok) throw new Error('Помилка сервера');
